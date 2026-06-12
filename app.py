@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, make_response
 import urllib.request, urllib.parse, json, re, os, hashlib, xml.etree.ElementTree as ET, time, threading
 
 app = Flask(__name__)
@@ -8,7 +8,7 @@ API_URL = "https://www.apptimes.cn/tool/tpwd-parse"
 USERNAME = os.environ.get("TPWD_USER", "13332633249")
 PASSWORD = os.environ.get("TPWD_PASS", "molin000")
 APPKEY = os.environ.get("TPWD_APPKEY", "lr8kz1wq")
-WX_TOKEN = os.environ.get("WX_TOKEN", "tpwd123")  # 公众号后台填的 Token
+WX_TOKEN = os.environ.get("WX_TOKEN", "tpwd123")
 
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
 
@@ -56,7 +56,7 @@ def check_signature(signature, timestamp, nonce):
     arr = sorted([WX_TOKEN, timestamp, nonce])
     return hashlib.sha1("".join(arr).encode()).hexdigest() == signature
 
-# ====== 公众号消息处理 ======
+# ====== 公众号 ======
 @app.route("/wechat", methods=["GET", "POST"])
 def wechat():
     if request.method == "GET":
@@ -67,14 +67,11 @@ def wechat():
         if check_signature(signature, timestamp, nonce):
             return echostr
         return "验证失败"
-
-    # POST - 接收用户消息
     xml_data = request.data
     root = ET.fromstring(xml_data)
     msg_type = root.findtext("MsgType")
     from_user = root.findtext("FromUserName")
     to_user = root.findtext("ToUserName")
-
     if msg_type == "text":
         content = root.findtext("Content", "").strip()
         if not content:
@@ -85,7 +82,6 @@ def wechat():
                 reply = f"商品ID: {item_id}\n\n完整链接: {url}"
             else:
                 reply = "解析失败，请确认淘口令是否正确"
-
         xml_reply = f"""<xml>
 <ToUserName><![CDATA[{from_user}]]></ToUserName>
 <FromUserName><![CDATA[{to_user}]]></FromUserName>
@@ -94,96 +90,9 @@ def wechat():
 <Content><![CDATA[{reply}]]></Content>
 </xml>"""
         return xml_reply, 200, {"Content-Type": "application/xml"}
-
     return ""
 
-# ====== 原有网页入口 ======
-HTML = """<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>淘口令解析</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,"Microsoft YaHei","PingFang SC",sans-serif;background:#f5f5f5;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:16px}
-.container{background:#fff;border-radius:16px;padding:32px 24px;width:100%;max-width:460px;box-shadow:0 4px 30px rgba(0,0,0,0.06)}
-h1{font-size:20px;color:#222;text-align:center;margin-bottom:4px}
-.sub{text-align:center;color:#999;font-size:13px;margin-bottom:24px}
-textarea{width:100%;height:110px;padding:14px;border:1.5px solid #e0e0e0;border-radius:12px;font-size:15px;line-height:1.5;resize:none;outline:none;font-family:inherit;background:#fafafa}
-textarea:focus{border-color:#ff6a00;background:#fff}
-.hint{text-align:center;margin-top:10px;font-size:12px;color:#aaa}
-.hint span{background:#f0f0f0;padding:4px 14px;border-radius:20px}
-.row{display:flex;gap:10px;margin-top:16px}
-.btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;text-align:center}
-.btn-pri{background:#ff6a00;color:#fff}
-.btn-pri:active{background:#e55e00}
-.btn-pri:disabled{background:#ccc}
-.btn-out{background:#fff;color:#666;border:1.5px solid #ddd}
-.btn-out:active{background:#f5f5f5}
-.loading{display:none;text-align:center;margin-top:20px;color:#999;font-size:14px}
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#ff6a00;border-radius:50%;animation:s .6s linear infinite;vertical-align:middle;margin-right:6px}
-@keyframes s{to{transform:rotate(360deg)}}
-.err{display:none;margin-top:16px;padding:12px 16px;background:#fff0f0;border-radius:10px;color:#d32f2f;font-size:14px;border:1px solid #ffcdd2}
-.res{display:none;margin-top:20px}
-.card{background:#fafafa;border:1px solid #eee;border-radius:14px;overflow:hidden}
-.id-box{text-align:center;padding:20px 18px;border-bottom:1px solid #f0f0f0}
-.id-num{font-size:32px;font-weight:700;color:#ff6a00;letter-spacing:1px;cursor:pointer}
-.id-lbl{font-size:12px;color:#999;margin-top:6px}
-.id-cp{font-size:12px;color:#999;margin-top:8px}
-.id-cp span{background:#f0f0f0;padding:3px 12px;border-radius:20px}
-.r-item{display:flex;align-items:center;padding:14px 18px}
-.r-lbl{font-size:12px;color:#999;width:70px;flex-shrink:0}
-.r-val{font-size:14px;color:#333;word-break:break-all;flex:1;line-height:1.4}
-.toast{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.75);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:999;pointer-events:none}
-</style>
-</head>
-<body>
-<div class="toast" id="toast"></div>
-<div class="container">
-<h1>淘口令解析</h1>
-<p class="sub">自动提取商品数字ID</p>
-<textarea id="content" placeholder="双击此处粘贴" readonly onfocus="this.removeAttribute('readonly')"></textarea>
-<div class="hint"><span>双击输入框粘贴</span></div>
-<div class="row">
-<button class="btn btn-pri" id="btn" onclick="parse()">解析</button>
-<button class="btn btn-out" onclick="clr()">清空</button>
-</div>
-<div class="loading" id="loading"><span class="spinner"></span> 解析中...</div>
-<div class="err" id="err"></div>
-<div class="res" id="res">
-<div class="card">
-<div class="id-box" onclick="cp()">
-<div class="id-num" id="id">-</div>
-<div class="id-lbl">商品数字ID（点击复制）</div>
-<div class="id-cp"><span>点击数字即可复制</span></div>
-</div>
-<div class="r-item"><span class="r-lbl">链接</span><span class="r-val" id="url"></span></div>
-</div>
-</div>
-</div>
-<script>
-var inp=document.getElementById("content");
-inp.addEventListener("dblclick",function(){paste()});
-inp.addEventListener("touchend",function(e){var n=Date.now();if(this.lastTap&&(n-this.lastTap)<400){e.preventDefault();paste();this.lastTap=0}else{this.lastTap=n}});
-function paste(){if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(t){if(t){inp.value=t;toast("已粘贴")}else{toast("剪贴板为空")}}).catch(function(){inp.value="";inp.focus();document.execCommand("paste")})}else{inp.value="";inp.focus();setTimeout(function(){try{document.execCommand("paste")}catch(e){toast("请手动粘贴")}},100)}}
-function clr(){inp.value="";document.getElementById("res").style.display="none";document.getElementById("err").style.display="none";inp.focus()}
-function parse(){var c=inp.value.trim();if(!c){toast("请输入淘口令");return}
-var btn=document.getElementById("btn");btn.disabled=true;document.getElementById("loading").style.display="block";document.getElementById("err").style.display="none";document.getElementById("res").style.display="none"
-fetch("/parse",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"content="+encodeURIComponent(c)}).then(function(r){return r.json()}).then(function(res){if(res.code===0){document.getElementById("id").textContent=res.item_id;document.getElementById("url").textContent=res.url;document.getElementById("res").style.display="block"}else{document.getElementById("err").textContent=res.msg;document.getElementById("err").style.display="block"}}).catch(function(e){document.getElementById("err").textContent="请求失败: "+e.message;document.getElementById("err").style.display="block"}).finally(function(){btn.disabled=false;document.getElementById("loading").style.display="none"})}
-function cp(){var id=document.getElementById("id").textContent;if(!id||id==="-")return
-if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(id).then(function(){toast("已复制: "+id)}).catch(function(){fc(id)})}else{fc(id)}}
-function fc(t){var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("已复制: "+t)}catch(e){toast("复制失败")};document.body.removeChild(ta)}
-function toast(m){var t=document.getElementById("toast");t.textContent=m;t.style.display="block";clearTimeout(t._timer);t._timer=setTimeout(function(){t.style.display="none"},1500)}
-</script>
-</body>
-</html>"""
-
-# ====== 第三方平台 API 接口 ======
-# 微擎、微信云托管等第三方平台可以调这个接口获取回复内容
-# 请求: POST /api/reply, body: content=淘口令
-# 返回: {"code":0, "reply":"商品ID: xxx\n\n链接: xxx"}
+# ====== API ======
 @app.route("/api/reply", methods=["POST"])
 def api_reply():
     content = request.form.get("content", "") or request.args.get("content", "")
@@ -197,10 +106,6 @@ def api_reply():
     except Exception as e:
         return jsonify({"code": 1, "reply": f"系统错误: {str(e)}"})
 
-@app.route("/")
-def index():
-    return render_template_string(HTML)
-
 @app.route("/parse", methods=["POST"])
 def parse():
     content = request.form.get("content", "")
@@ -213,6 +118,245 @@ def parse():
         return jsonify({"code": 1, "msg": "解析失败"})
     except Exception as e:
         return jsonify({"code": 1, "msg": str(e)})
+
+# ====== PWA 图标 ======
+ICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e8894a"/><stop offset="100%" stop-color="#d6743a"/></linearGradient></defs>
+<rect width="512" height="512" rx="100" fill="url(#g)"/>
+<text x="256" y="320" text-anchor="middle" font-size="280" font-weight="bold" font-family="sans-serif" fill="#fff">淘</text>
+</svg>"""
+
+@app.route("/icon.svg")
+def icon_svg():
+    r = make_response(ICON_SVG)
+    r.headers["Content-Type"] = "image/svg+xml"
+    return r
+
+@app.route("/icon-192.png")
+def icon_192():
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="38" fill="#d6743a"/><text x="96" y="124" text-anchor="middle" font-size="100" font-weight="bold" fill="#fff" font-family="sans-serif">淘</text></svg>', 200, {"Content-Type": "image/svg+xml"}
+
+@app.route("/icon-512.png")
+def icon_512():
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#d6743a"/><text x="256" y="320" text-anchor="middle" font-size="280" font-weight="bold" fill="#fff" font-family="sans-serif">淘</text></svg>', 200, {"Content-Type": "image/svg+xml"}
+
+# ====== manifest.json ======
+@app.route("/manifest.json")
+def manifest():
+    m = {
+        "name": "淘口令解析",
+        "short_name": "淘口令",
+        "description": "自动提取淘口令中的商品数字ID",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#fdf6ed",
+        "theme_color": "#d6743a",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/svg+xml"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable"}
+        ]
+    }
+    return jsonify(m)
+
+# ====== service-worker.js ======
+SW_JS = """self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+self.addEventListener('fetch', e => {
+  if (e.request.method === 'POST') return;
+  e.respondWith(
+    caches.open('tpwd-v1').then(c => c.match(e.request).then(r => r || fetch(e.request)))
+  );
+});
+"""
+
+@app.route("/service-worker.js")
+def sw():
+    r = make_response(SW_JS)
+    r.headers["Content-Type"] = "application/javascript"
+    r.headers["Cache-Control"] = "no-cache"
+    return r
+
+# ====== PWA 首页 ======
+PWA_HTML = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#d6743a">
+<title>淘口令解析</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{height:100vh;background:#fdf6ed;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden;display:flex;flex-direction:column}
+.bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;background:linear-gradient(160deg,#fdf6ed,#fef9f0,#fdf1e3,#fce9d4);background-size:200% 200%;animation:bgShift 12s ease infinite;pointer-events:none}
+@keyframes bgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;opacity:0.15}
+.o1{width:200px;height:200px;background:radial-gradient(circle,#f5cba0,transparent 70%);top:-40px;left:10%;animation:float 8s ease-in-out infinite}
+.o2{width:140px;height:140px;background:radial-gradient(circle,#f0b27a,transparent 70%);bottom:20%;right:5%;animation:float 10s ease-in-out infinite 1s}
+.o3{width:100px;height:100px;background:radial-gradient(circle,#e8b87a,transparent 70%);top:40%;left:70%;animation:float 7s ease-in-out infinite 0.5s}
+.o4{width:150px;height:150px;background:radial-gradient(circle,#f2d1a8,transparent 70%);bottom:-30px;left:15%;animation:float 9s ease-in-out infinite 2s}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+.main{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;width:100%}
+.msg-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 14px 10px;-webkit-overflow-scrolling:touch}
+.msg-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:40%;color:#ccb8a8}
+.msg-empty-icon{font-size:44px;margin-bottom:12px}
+.msg-empty-text{font-size:14px;color:#ccb8a8}
+.msg-row{width:100%;margin-bottom:16px;animation:msgIn .3s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}}
+.msg-right{display:flex;justify-content:flex-end}
+.msg-left{display:flex;justify-content:flex-start}
+.bubble{max-width:80%;padding:10px 14px;font-size:15px;line-height:1.5;word-break:break-all;position:relative}
+.bubble-user{background:#d6743a;color:#fff;border-radius:12px 4px 12px 12px;box-shadow:0 2px 8px rgba(214,116,58,0.15)}
+.bubble-bot{background:#fff;color:#3d2a1a;border-radius:4px 12px 12px 12px;box-shadow:0 1px 6px rgba(180,120,60,0.06);border:1px solid #f5ede6}
+.bot-label{font-size:11px;color:#b8a08c;margin-bottom:2px;letter-spacing:1px}
+.bot-id{font-size:26px;font-weight:700;color:#d6743a;letter-spacing:2px;line-height:1.3;cursor:pointer}
+.bot-id:active{opacity:0.7}
+.bot-copy{font-size:11px;color:#dcc8b8;margin-top:8px;padding-top:8px;border-top:1px solid #f0e8e0;text-align:center;cursor:pointer}
+.input-bar{padding:10px 12px 16px;background:rgba(255,255,255,0.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid #eee}
+.input{width:100%;min-height:110px;max-height:200px;border:none;font-size:16px;line-height:1.6;color:#3d2a1a;background:#f5f0ea;border-radius:12px;padding:14px;box-sizing:border-box;font-family:inherit;resize:none;outline:none}
+.input::placeholder{color:#ccb8a8}
+.btn{width:100%;height:42px;line-height:42px;margin-top:10px;background:linear-gradient(135deg,#e8894a,#d6743a);color:#fff;border-radius:10px;font-size:16px;text-align:center;border:none;cursor:pointer;transition:opacity .2s}
+.btn:active{opacity:0.8}
+.btn:disabled{opacity:0.4;cursor:default}
+.toast{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#fff;padding:10px 24px;border-radius:12px;font-size:14px;z-index:999;pointer-events:none;display:none;white-space:nowrap}
+@media(prefers-color-scheme:dark){body{background:#2a2018}.bg{background:linear-gradient(160deg,#2a2018,#3d2a1a)}.bubble-bot{background:#3d2a1a;color:#f0e0d0;border-color:#5a3e2b}.input-bar{background:rgba(42,32,24,0.92);border-color:#333}.input{background:#3d2a1a;color:#f0e0d0}.bubble-user{box-shadow:0 2px 8px rgba(214,116,58,0.1)}.bot-id{color:#e8a070}.msg-empty{color:#7a5a3a}.btn{background:linear-gradient(135deg,#c87a3a,#b8642a)}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="orb o4"></div>
+
+<div class="main">
+  <div class="msg-list" id="msgList">
+    <div class="msg-empty" id="empty">
+      <div class="msg-empty-icon">☀️</div>
+      <div class="msg-empty-text">双击下方输入框粘贴淘口令</div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <textarea class="input" id="input" placeholder="双击粘贴淘口令..." maxlength="500"></textarea>
+    <button class="btn" id="btn" onclick="send()">发送</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s)
+const msgList = $('#msgList')
+const input = $('#input')
+const btn = $('#btn')
+const empty = $('#empty')
+let lastTap = 0
+
+input.addEventListener('touchend', e => {
+  const now = Date.now()
+  if (lastTap && now - lastTap < 350) {
+    e.preventDefault(); lastTap = 0; pasteFromClipboard()
+  } else { lastTap = now }
+})
+input.addEventListener('dblclick', pasteFromClipboard)
+
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText()
+    if (text) { input.value = text; showToast('已粘贴') }
+  } catch { showToast('无法读取剪贴板') }
+}
+
+const api = '/parse'
+
+async function send() {
+  const text = input.value.trim()
+  if (!text || btn.disabled) return
+  addMsg(text, 'user')
+  input.value = ''
+  btn.disabled = true
+  try {
+    const res = await fetch(api, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'content=' + encodeURIComponent(text)
+    })
+    const data = await res.json()
+    if (data.code === 0) {
+      addResult(data.item_id)
+    } else {
+      addMsg(data.msg || '解析失败', 'error')
+    }
+  } catch {
+    addMsg('网络错误，请检查网络后重试', 'error')
+  }
+  btn.disabled = false
+}
+
+function addMsg(text, type) {
+  empty.style.display = 'none'
+  const row = document.createElement('div')
+  row.className = 'msg-row ' + (type === 'user' ? 'msg-right' : 'msg-left')
+  if (type === 'error') {
+    row.innerHTML = '<div class="bubble bubble-bot" style="color:#c0392b">' + escape(text) + '</div>'
+  } else {
+    row.innerHTML = '<div class="bubble bubble-' + type + '">' + escape(text) + '</div>'
+  }
+  msgList.appendChild(row)
+  scrollBottom()
+}
+
+function addResult(id) {
+  empty.style.display = 'none'
+  const row = document.createElement('div')
+  row.className = 'msg-row msg-left'
+  row.innerHTML = '<div class="bubble bubble-bot"><div class="bot-label">商品数字ID</div><div class="bot-id" onclick="copyId(\'' + id + '\')">' + id + '</div><div class="bot-copy" onclick="copyId(\'' + id + '\')">点击复制</div></div>'
+  msgList.appendChild(row)
+  scrollBottom()
+}
+
+async function copyId(id) {
+  try {
+    await navigator.clipboard.writeText(id)
+    showToast('已复制 ' + id)
+  } catch {
+    const ta = document.createElement('textarea')
+    ta.value = id; ta.style.position = 'fixed'; ta.style.opacity = '0'
+    document.body.appendChild(ta); ta.select()
+    document.execCommand('copy'); document.body.removeChild(ta)
+    showToast('已复制 ' + id)
+  }
+}
+
+function scrollBottom() {
+  requestAnimationFrame(() => { msgList.scrollTop = msgList.scrollHeight })
+}
+
+function showToast(msg) {
+  const t = $('#toast')
+  t.textContent = msg; t.style.display = 'block'
+  clearTimeout(t._t); t._t = setTimeout(() => { t.style.display = 'none' }, 1500)
+}
+
+function escape(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML
+}
+
+// register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+  })
+}
+</script>
+</body>
+</html>"""
+
+@app.route("/")
+def index():
+    return render_template_string(PWA_HTML)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
