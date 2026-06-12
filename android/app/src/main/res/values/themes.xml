@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#FCF3E9</item>
+        <item name="android:navigationBarColor">#FCF3E9</item>
+        <item name="android:windowBackground">#FCF3E9</item>
+    </style>
+</resources>
