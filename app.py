@@ -191,27 +191,28 @@ PWA_HTML = """<!DOCTYPE html>
 <title>淘口令解析</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{height:100vh;background:#fdf6ed;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden;display:flex;flex-direction:column}
-.bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;background:linear-gradient(160deg,#fdf6ed,#fef9f0,#fdf1e3,#fce9d4);background-size:200% 200%;animation:bgShift 12s ease infinite;pointer-events:none}
-@keyframes bgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;opacity:0.15}
-.o1{width:200px;height:200px;background:radial-gradient(circle,#f5cba0,transparent 70%);top:-40px;left:10%;animation:float 8s ease-in-out infinite}
-.o2{width:140px;height:140px;background:radial-gradient(circle,#f0b27a,transparent 70%);bottom:20%;right:5%;animation:float 10s ease-in-out infinite 1s}
-.o3{width:100px;height:100px;background:radial-gradient(circle,#e8b87a,transparent 70%);top:40%;left:70%;animation:float 7s ease-in-out infinite 0.5s}
-.o4{width:150px;height:150px;background:radial-gradient(circle,#f2d1a8,transparent 70%);bottom:-30px;left:15%;animation:float 9s ease-in-out infinite 2s}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
-.main{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;width:100%}
-.msg-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 14px 10px;-webkit-overflow-scrolling:touch}
-.msg-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:40%;color:#ccb8a8}
+body{height:100%;background:#fcf3e9;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.page{height:100vh;position:relative}
+.bg-layer{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;background:linear-gradient(160deg,#fdf6ed,#fef9f0);pointer-events:none}
+.orb{position:absolute;border-radius:50%;opacity:0.18}
+.o1{width:180px;height:180px;background:radial-gradient(circle,#f5cba0,transparent 70%);top:-30px;left:10%;animation:float 7s ease-in-out infinite}
+.o2{width:120px;height:120px;background:radial-gradient(circle,#f0b27a,transparent 70%);bottom:20%;right:8%;animation:float 9s ease-in-out infinite 1s}
+.o3{width:80px;height:80px;background:radial-gradient(circle,#e8b87a,transparent 70%);top:40%;left:70%;animation:float 6s ease-in-out infinite 0.5s}
+.o4{width:150px;height:150px;background:radial-gradient(circle,#f2d1a8,transparent 70%);bottom:-20px;left:15%;animation:float 10s ease-in-out infinite 2s}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+.main{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh}
+.msg-list{flex:1;padding:16px 14px 10px;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;-webkit-overflow-scrolling:touch}
+.msg-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:40%}
 .msg-empty-icon{font-size:44px;margin-bottom:12px}
 .msg-empty-text{font-size:14px;color:#ccb8a8}
 .msg-row{width:100%;margin-bottom:16px;animation:msgIn .3s ease}
 @keyframes msgIn{from{opacity:0;transform:translateY(10px)}}
 .msg-right{display:flex;justify-content:flex-end}
 .msg-left{display:flex;justify-content:flex-start}
-.bubble{max-width:80%;padding:10px 14px;font-size:15px;line-height:1.5;word-break:break-all;position:relative}
+.bubble{max-width:75%;padding:10px 14px;font-size:15px;line-height:1.5;word-break:break-all;position:relative}
 .bubble-user{background:#d6743a;color:#fff;border-radius:12px 4px 12px 12px;box-shadow:0 2px 8px rgba(214,116,58,0.15)}
 .bubble-bot{background:#fff;color:#3d2a1a;border-radius:4px 12px 12px 12px;box-shadow:0 1px 6px rgba(180,120,60,0.06);border:1px solid #f5ede6}
+.bubble-error{color:#c0392b}
 .bot-label{font-size:11px;color:#b8a08c;margin-bottom:2px;letter-spacing:1px}
 .bot-id{font-size:26px;font-weight:700;color:#d6743a;letter-spacing:2px;line-height:1.3;cursor:pointer}
 .bot-id:active{opacity:0.7}
@@ -219,17 +220,16 @@ body{height:100vh;background:#fdf6ed;font-family:-apple-system,"PingFang SC","Mi
 .input-bar{padding:10px 12px 16px;background:rgba(255,255,255,0.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid #eee}
 .input{width:100%;min-height:110px;max-height:200px;border:none;font-size:16px;line-height:1.6;color:#3d2a1a;background:#f5f0ea;border-radius:12px;padding:14px;box-sizing:border-box;font-family:inherit;resize:none;outline:none}
 .input::placeholder{color:#ccb8a8}
-.btn{width:100%;height:42px;line-height:42px;margin-top:10px;background:linear-gradient(135deg,#e8894a,#d6743a);color:#fff;border-radius:10px;font-size:16px;text-align:center;border:none;cursor:pointer;transition:opacity .2s}
+.btn{width:100%;height:42px;line-height:42px;margin:10px 0 0;background:linear-gradient(135deg,#e8894a,#d6743a);color:#fff;border-radius:10px;font-size:16px;text-align:center;border:none;cursor:pointer}
 .btn:active{opacity:0.8}
-.btn:disabled{opacity:0.4;cursor:default}
+.btn:disabled{opacity:0.4}
 .toast{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#fff;padding:10px 24px;border-radius:12px;font-size:14px;z-index:999;pointer-events:none;display:none;white-space:nowrap}
-@media(prefers-color-scheme:dark){body{background:#2a2018}.bg{background:linear-gradient(160deg,#2a2018,#3d2a1a)}.bubble-bot{background:#3d2a1a;color:#f0e0d0;border-color:#5a3e2b}.input-bar{background:rgba(42,32,24,0.92);border-color:#333}.input{background:#3d2a1a;color:#f0e0d0}.bubble-user{box-shadow:0 2px 8px rgba(214,116,58,0.1)}.bot-id{color:#e8a070}.msg-empty{color:#7a5a3a}.btn{background:linear-gradient(135deg,#c87a3a,#b8642a)}}
 </style>
 </head>
 <body>
-<div class="bg"></div>
+<div class="page">
+<div class="bg-layer"></div>
 <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="orb o4"></div>
-
 <div class="main">
   <div class="msg-list" id="msgList">
     <div class="msg-empty" id="empty">
@@ -237,120 +237,31 @@ body{height:100vh;background:#fdf6ed;font-family:-apple-system,"PingFang SC","Mi
       <div class="msg-empty-text">双击下方输入框粘贴淘口令</div>
     </div>
   </div>
-
   <div class="input-bar">
     <textarea class="input" id="input" placeholder="双击粘贴淘口令..." maxlength="500"></textarea>
     <button class="btn" id="btn" onclick="send()">发送</button>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
-const $ = s => document.querySelector(s)
-const msgList = $('#msgList')
-const input = $('#input')
-const btn = $('#btn')
-const empty = $('#empty')
-let lastTap = 0
-
-input.addEventListener('touchend', e => {
-  const now = Date.now()
-  if (lastTap && now - lastTap < 350) {
-    e.preventDefault(); lastTap = 0; pasteFromClipboard()
-  } else { lastTap = now }
-})
-input.addEventListener('dblclick', pasteFromClipboard)
-
-async function pasteFromClipboard() {
-  try {
-    const text = await navigator.clipboard.readText()
-    if (text) { input.value = text; showToast('已粘贴') }
-  } catch { showToast('无法读取剪贴板') }
-}
-
-const api = '/parse'
-
-async function send() {
-  const text = input.value.trim()
-  if (!text || btn.disabled) return
-  addMsg(text, 'user')
-  input.value = ''
-  btn.disabled = true
-  try {
-    const res = await fetch(api, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'content=' + encodeURIComponent(text)
-    })
-    const data = await res.json()
-    if (data.code === 0) {
-      addResult(data.item_id)
-    } else {
-      addMsg(data.msg || '解析失败', 'error')
-    }
-  } catch {
-    addMsg('网络错误，请检查网络后重试', 'error')
-  }
-  btn.disabled = false
-}
-
-function addMsg(text, type) {
-  empty.style.display = 'none'
-  const row = document.createElement('div')
-  row.className = 'msg-row ' + (type === 'user' ? 'msg-right' : 'msg-left')
-  if (type === 'error') {
-    row.innerHTML = '<div class="bubble bubble-bot" style="color:#c0392b">' + escape(text) + '</div>'
-  } else {
-    row.innerHTML = '<div class="bubble bubble-' + type + '">' + escape(text) + '</div>'
-  }
-  msgList.appendChild(row)
-  scrollBottom()
-}
-
-function addResult(id) {
-  empty.style.display = 'none'
-  const row = document.createElement('div')
-  row.className = 'msg-row msg-left'
-  row.innerHTML = '<div class="bubble bubble-bot"><div class="bot-label">商品数字ID</div><div class="bot-id" onclick="copyId(\'' + id + '\')">' + id + '</div><div class="bot-copy" onclick="copyId(\'' + id + '\')">点击复制</div></div>'
-  msgList.appendChild(row)
-  scrollBottom()
-}
-
-async function copyId(id) {
-  try {
-    await navigator.clipboard.writeText(id)
-    showToast('已复制 ' + id)
-  } catch {
-    const ta = document.createElement('textarea')
-    ta.value = id; ta.style.position = 'fixed'; ta.style.opacity = '0'
-    document.body.appendChild(ta); ta.select()
-    document.execCommand('copy'); document.body.removeChild(ta)
-    showToast('已复制 ' + id)
-  }
-}
-
-function scrollBottom() {
-  requestAnimationFrame(() => { msgList.scrollTop = msgList.scrollHeight })
-}
-
-function showToast(msg) {
-  const t = $('#toast')
-  t.textContent = msg; t.style.display = 'block'
-  clearTimeout(t._t); t._t = setTimeout(() => { t.style.display = 'none' }, 1500)
-}
-
-function escape(s) {
-  const d = document.createElement('div'); d.textContent = s; return d.innerHTML
-}
-
-// register service worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-  })
-}
+const $=s=>document.querySelector(s)
+const msgList=$('#msgList'),input=$('#input'),btn=$('#btn'),empty=$('#empty')
+let lastTap=0
+input.addEventListener('touchend',e=>{const n=Date.now();if(lastTap&&n-lastTap<350){e.preventDefault();lastTap=0;paste()}else{lastTap=n}})
+input.addEventListener('dblclick',paste)
+async function paste(){try{const t=await navigator.clipboard.readText();if(t){input.value=t;showToast('已粘贴')}}catch{showToast('无法读取剪贴板')}}
+async function send(){const t=input.value.trim();if(!t||btn.disabled)return;addMsg(t,'user');input.value='';btn.disabled=true
+try{const r=await fetch('/parse',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'content='+encodeURIComponent(t)});const d=await r.json();if(d.code===0){addResult(d.item_id)}else{addMsg(d.msg||'解析失败','error')}}catch{addMsg('网络错误，请检查网络后重试','error')}
+btn.disabled=false}
+function addMsg(t,type){empty.style.display='none';const r=document.createElement('div');r.className='msg-row '+(type==='user'?'msg-right':'msg-left');r.innerHTML=type==='error'?'<div class="bubble bubble-bot bubble-error">'+esc(t)+'</div>':'<div class="bubble bubble-'+type+'">'+esc(t)+'</div>';msgList.appendChild(r);scroll()}
+function addResult(id){empty.style.display='none';const r=document.createElement('div');r.className='msg-row msg-left';r.innerHTML='<div class="bubble bubble-bot"><div class="bot-label">商品数字ID</div><div class="bot-id" onclick="copyId('+id+')">'+id+'</div><div class="bot-copy" onclick="copyId('+id+')">点击复制</div></div>';msgList.appendChild(r);scroll()}
+async function copyId(id){try{await navigator.clipboard.writeText(String(id));showToast('已复制 '+id)}catch{const t=document.createElement('textarea');t.value=id;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('已复制 '+id)}}
+function scroll(){requestAnimationFrame(()=>{msgList.scrollTop=msgList.scrollHeight})}
+function showToast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.display='none'},1500)}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/service-worker.js')})}
 </script>
+</div>
 </body>
 </html>"""
 
