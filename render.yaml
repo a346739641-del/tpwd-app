@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: tpwd-parse
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: TPWD_USER
+        value: 13332633249
+      - key: TPWD_PASS
+        value: molin000
+      - key: TPWD_APPKEY
+        value: lr8kz1wq
+      - key: WX_TOKEN
+        value: tpwd123
