@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccess(true);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
