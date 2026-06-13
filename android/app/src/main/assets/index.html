@@ -65,13 +65,13 @@ const msgList=$('#msgList'),input=$('#input'),btn=$('#btn'),empty=$('#empty')
 let lastTap=0
 input.addEventListener('touchend',e=>{const n=Date.now();if(lastTap&&n-lastTap<350){e.preventDefault();lastTap=0;paste()}else{lastTap=n}})
 input.addEventListener('dblclick',paste)
-async function paste(){try{const t=await navigator.clipboard.readText();if(t){input.value=t;showToast('已粘贴')}}catch{showToast('无法读取剪贴板')}}
+function paste(){try{if(typeof TpwdApp!=='undefined'){try{var t=TpwdApp.getText();if(t){input.value=t;showToast('已粘贴');return}showToast('剪贴板为空');return}catch(e){console.log('TpwdApp error:',e)}}navigator.clipboard.readText().then(function(t){if(t){input.value=t;showToast('已粘贴')}}).catch(function(){showToast('无法读取剪贴板，请先复制淘口令')})}catch(e){}}
 async function send(){const t=input.value.trim();if(!t||btn.disabled)return;if(t.indexOf('https://e.tb.cn')===-1){showToast('请发送淘口令（含 e.tb.cn 链接）');return};addMsg(t,'user');input.value='';btn.disabled=true
 try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'content='+encodeURIComponent(t)});const d=await r.json();if(d.code===0){addResult(d.item_id)}else{addMsg(d.msg||'解析失败','error')}}catch(e){addMsg('网络错误，请检查网络后重试','error')}
 btn.disabled=false}
 function addMsg(t,type){empty.style.display='none';const r=document.createElement('div');r.className='msg-row '+(type==='user'?'msg-right':'msg-left');r.innerHTML=type==='error'?'<div class="bubble bubble-bot bubble-error">'+esc(t)+'</div>':'<div class="bubble bubble-'+type+'">'+esc(t)+'</div>';msgList.appendChild(r);scroll()}
 function addResult(id){empty.style.display='none';const r=document.createElement('div');r.className='msg-row msg-left';r.innerHTML='<div class="bubble bubble-bot"><div class="bot-label">商品数字ID</div><div class="bot-id" onclick="copyId('+id+')">'+id+'</div><div class="bot-copy" onclick="copyId('+id+')">点击复制</div></div>';msgList.appendChild(r);scroll()}
-async function copyId(id){try{await navigator.clipboard.writeText(String(id));showToast('已复制 '+id)}catch{const t=document.createElement('textarea');t.value=id;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('已复制 '+id)}}
+async function copyId(id){showToast('已复制 '+id);try{if(typeof TpwdApp!=='undefined'){TpwdApp.setText(String(id));return}}catch(e){}var ta=document.createElement('textarea');ta.value=id;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta)}
 function scroll(){requestAnimationFrame(()=>{msgList.scrollTop=msgList.scrollHeight})}
 function showToast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.display='none'},1500)}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
