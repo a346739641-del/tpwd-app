@@ -18,6 +18,9 @@ APPKEY = os.environ.get("TPWD_APPKEY", "lr8kz1wq")
 WX_TOKEN = os.environ.get("WX_TOKEN", "tpwd123")
 
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
+opener.addheaders = [("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.230 Mobile Safari/537.36"),
+    ("Accept", "application/json, text/plain, */*"),
+    ("X-Requested-With", "XMLHttpRequest")]
 
 def login():
     req = urllib.request.Request(LOGIN_URL)
@@ -51,7 +54,13 @@ def parse_tpwd(content):
             login()
             res = call_api(content)
         if isinstance(res, dict) and res.get("code") == 0:
-            url = res.get("data", {}).get("url", "")
+            data = res.get("data")
+            if isinstance(data, dict):
+                url = data.get("url", "")
+            elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+                url = data[0].get("url", "")
+            else:
+                return None, None
             m = re.search(r"id=(\d+)", url)
             item_id = m.group(1) if m else None
             return item_id, url
