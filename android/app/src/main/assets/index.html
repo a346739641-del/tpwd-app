@@ -64,8 +64,8 @@ const $=s=>document.querySelector(s)
 const msgList=$('#msgList'),input=$('#input'),btn=$('#btn'),empty=$('#empty')
 let lastTap=0
 input.addEventListener('touchend',e=>{const n=Date.now();if(lastTap&&n-lastTap<350){e.preventDefault();lastTap=0;paste()}else{lastTap=n}})
-input.addEventListener('dblclick',paste)
-function paste(){try{var t=prompt('CLIPBOARD_GET','');if(t){input.value=t;showToast('已粘贴')}else{showToast('剪贴板为空，请先复制淘口令')}}catch(e){showToast('无法读取剪贴板')}}
+input.addEventListener('dblclick',function(e){e.preventDefault();paste()})
+function paste(){try{var t=prompt('CLIPBOARD_GET','');if(t){input.value=t;showToast('已粘贴')}else{showToast('剪贴板为空，请先复制淘口令')}}catch(e){}input.blur()}
 async function send(){const t=input.value.trim();if(!t||btn.disabled)return;if(t.indexOf('https://e.tb.cn')===-1){showToast('请发送淘口令（含 e.tb.cn 链接）');return};addMsg(t,'user');input.value='';btn.disabled=true
 try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'content='+encodeURIComponent(t)});const d=await r.json();if(d.code===0){addResult(d.item_id)}else{addMsg(d.msg||'解析失败','error')}}catch(e){addMsg('网络错误，请检查网络后重试','error')}
 btn.disabled=false}

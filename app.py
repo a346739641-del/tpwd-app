@@ -3,6 +3,13 @@ import urllib.request, urllib.parse, json, re, os, hashlib, xml.etree.ElementTre
 
 app = Flask(__name__)
 
+@app.after_request
+def add_cors(resp):
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return resp
+
 LOGIN_URL = "https://www.apptimes.cn/login"
 API_URL = "https://www.apptimes.cn/tool/tpwd-parse"
 USERNAME = os.environ.get("TPWD_USER", "13332633249")
@@ -106,8 +113,14 @@ def api_reply():
     except Exception as e:
         return jsonify({"code": 1, "reply": f"系统错误: {str(e)}"})
 
-@app.route("/parse", methods=["POST"])
+@app.route("/parse", methods=["POST", "OPTIONS"])
 def parse():
+    if request.method == "OPTIONS":
+        resp = make_response("")
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Methods"] = "POST,OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return resp
     content = request.form.get("content", "")
     if not content:
         return jsonify({"code": 1, "msg": "请输入淘口令"})
