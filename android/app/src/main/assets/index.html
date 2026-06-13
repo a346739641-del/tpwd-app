@@ -66,7 +66,7 @@ let lastTap=0
 input.addEventListener('touchend',e=>{const n=Date.now();if(lastTap&&n-lastTap<350){e.preventDefault();lastTap=0;paste()}else{lastTap=n}})
 input.addEventListener('dblclick',paste)
 async function paste(){try{const t=await navigator.clipboard.readText();if(t){input.value=t;showToast('已粘贴')}}catch{showToast('无法读取剪贴板')}}
-async function send(){const t=input.value.trim();if(!t||btn.disabled)return;addMsg(t,'user');input.value='';btn.disabled=true
+async function send(){const t=input.value.trim();if(!t||btn.disabled)return;if(t.indexOf('https://e.tb.cn')===-1){showToast('请发送淘口令（含 e.tb.cn 链接）');return};addMsg(t,'user');input.value='';btn.disabled=true
 try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'content='+encodeURIComponent(t)});const d=await r.json();if(d.code===0){addResult(d.item_id)}else{addMsg(d.msg||'解析失败','error')}}catch(e){addMsg('网络错误，请检查网络后重试','error')}
 btn.disabled=false}
 function addMsg(t,type){empty.style.display='none';const r=document.createElement('div');r.className='msg-row '+(type==='user'?'msg-right':'msg-left');r.innerHTML=type==='error'?'<div class="bubble bubble-bot bubble-error">'+esc(t)+'</div>':'<div class="bubble bubble-'+type+'">'+esc(t)+'</div>';msgList.appendChild(r);scroll()}
