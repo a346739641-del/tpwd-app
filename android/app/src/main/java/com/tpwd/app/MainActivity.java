@@ -4,6 +4,9 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.webkit.JavascriptInterface;
 import android.webkit.JsPromptResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -20,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private static final String API_URL = "https://flask-nim9-269824-9-1442901802.sh.run.tcloudbase.com/parse";
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private String getClipText() {
         ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -38,7 +42,25 @@ public class MainActivity extends AppCompatActivity {
         cm.setPrimaryClip(ClipData.newPlainText("label", text));
     }
 
-    private String callApi(String content) {
+    public class ApiBridge {
+        @JavascriptInterface
+        public void callApi(final String content) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final String result = doHttpPost(content);
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            webView.evaluateJavascript("window.__apiResult(" + result + ")", null);
+                        }
+                    });
+                }
+            }).start();
+        }
+    }
+
+    private String doHttpPost(String content) {
         try {
             URL url = new URL(API_URL);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -72,8 +94,8 @@ public class MainActivity extends AppCompatActivity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
+
+        webView.addJavascriptInterface(new ApiBridge(), "TpwdApp");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -85,10 +107,6 @@ public class MainActivity extends AppCompatActivity {
                 if ("CLIPBOARD_SET".equals(message)) {
                     setClipText(defaultValue);
                     result.confirm("");
-                    return true;
-                }
-                if ("API_CALL".equals(message)) {
-                    result.confirm(callApi(defaultValue));
                     return true;
                 }
                 return super.onJsPrompt(view, url, message, defaultValue, result);
