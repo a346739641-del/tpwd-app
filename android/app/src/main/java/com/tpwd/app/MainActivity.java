@@ -67,8 +67,8 @@ public class MainActivity extends AppCompatActivity {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(30000);
             byte[] body = ("content=" + java.net.URLEncoder.encode(content, "UTF-8")).getBytes(StandardCharsets.UTF_8);
             conn.setFixedLengthStreamingMode(body.length);
             OutputStream os = conn.getOutputStream();
