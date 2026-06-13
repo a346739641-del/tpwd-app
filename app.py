@@ -61,7 +61,7 @@ def parse_tpwd(content):
                 url = data[0].get("url", "")
             else:
                 return None, None
-            m = re.search(r"itemIds=(\d+)", url) or re.search(r"shareDetailItemId=(\d+)", url) or re.search(r"(?:\?|&)id=(\d+)", url)
+            m = re.search(r"itemIds=(\d+)", url) or re.search(r"shareDetailItemId=(\d+)", url) or re.search(r"itemId=(\d+)", url) or re.search(r"(?:\?|&)id=(\d+)", url)
             item_id = m.group(1) if m else None
             return item_id, url
         return None, None
