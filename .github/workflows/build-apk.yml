@@ -24,7 +24,7 @@ jobs:
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
           cd android
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "org.gradle.jvmargs=-Xmx2g" >> local.properties
+          echo "org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8" >> local.properties
 
       - name: Build APK
         run: |
