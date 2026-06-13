@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
             java.util.Scanner s = new java.util.Scanner(is, "UTF-8").useDelimiter("\\A");
             return s.hasNext() ? s.next() : "{\"code\":1,\"msg\":\"empty response\"}";
         } catch (Exception e) {
-            return "{\"code\":1,\"msg\":\"\"}";
+            return "{\"code\":1,\"msg\":\"" + e.getClass().getSimpleName() + ": " + e.getMessage() + "\"}";
         }
     }
 

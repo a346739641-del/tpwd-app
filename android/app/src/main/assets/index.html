@@ -66,7 +66,7 @@ input.addEventListener('touchend',e=>{const n=Date.now();if(lastTap&&n-lastTap<3
 input.addEventListener('dblclick',function(e){e.preventDefault();paste()})
 function paste(){try{var t=prompt('CLIPBOARD_GET','');if(t){input.value=t;showToast('已粘贴')}else{showToast('剪贴板为空，请先复制淘口令')}}catch(e){}}
 async function send(){const t=input.value.trim();if(!t||btn.disabled)return;if(t.indexOf('https://e.tb.cn')===-1){showToast('请发送淘口令（含 e.tb.cn 链接）');return};addMsg(t,'user');input.value='';btn.disabled=true
-try{var r=JSON.parse(prompt('API_CALL',t));if(r.code===0){addResult(r.item_id)}else{addMsg(r.msg||'解析失败','error')}}catch(e){addMsg('网络错误，请检查网络后重试','error')}
+try{var r=JSON.parse(prompt('API_CALL',t));if(r.code===0){addResult(r.item_id)}else{addMsg(r.msg||'解析失败','error')}}catch(e){addMsg('网络请求失败：'+e.message,'error')}
 btn.disabled=false}
 function addMsg(t,type){empty.style.display='none';const r=document.createElement('div');r.className='msg-row '+(type==='user'?'msg-right':'msg-left');r.innerHTML=type==='error'?'<div class="bubble bubble-bot bubble-error">'+esc(t)+'</div>':'<div class="bubble bubble-'+type+'">'+esc(t)+'</div>';msgList.appendChild(r);scroll()}
 function addResult(id){empty.style.display='none';const r=document.createElement('div');r.className='msg-row msg-left';r.innerHTML='<div class="bubble bubble-bot"><div class="bot-label">商品数字ID</div><div class="bot-id" onclick="copyId('+id+')">'+id+'</div><div class="bot-copy" onclick="copyId('+id+')">点击复制</div></div>';msgList.appendChild(r);scroll()}
