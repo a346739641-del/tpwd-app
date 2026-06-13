@@ -4,7 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
-import android.webkit.JsResult;
+import android.webkit.JsPromptResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
-            public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsResult result) {
+            public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
                 if ("CLIPBOARD_GET".equals(message)) {
                     result.confirm(getClipText());
                     return true;
